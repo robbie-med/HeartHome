@@ -12,7 +12,8 @@ import {
   Menu,
   X,
   WifiOff,
-  CloudCheck
+  CloudCheck,
+  Settings as SettingsIcon
 } from 'lucide-react';
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
