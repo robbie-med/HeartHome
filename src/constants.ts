@@ -5,6 +5,9 @@ export const EDUCATIONAL_ARTICLES: Article[] = [
     id: 'intro-hf',
     title: 'Understanding Your Diagnosis',
     category: 'Diagnosis',
+    summary: 'An introduction to what heart failure is and how it affects your body.',
+    points: ['Heart failure means the heart isn\'t pumping well.', 'It is not a stopped heart.', 'Managing it involves coordination with your care team.'],
+    versionDate: '2024-05-20',
     content: `
 # What is Heart Failure?
 
@@ -22,6 +25,9 @@ Common causes include high blood pressure, past heart attacks, or diabetes. Your
     id: 'facets-symptoms',
     title: 'Watching for Red Flags (FACETS)',
     category: 'Management',
+    summary: 'Learn the FACETS acronym to identify symptoms early.',
+    points: ['F is for Fatigue', 'E is for Edema', 'S is for Sudden weight gain'],
+    versionDate: '2024-05-20',
     content: `
 # When to Call the Doctor: FACETS
 
@@ -39,6 +45,9 @@ Use this acronym to remember common heart failure symptoms. If these are new or 
     id: 'salt-fluid',
     title: 'Salt and Fluid Limits',
     category: 'Lifestyle',
+    summary: 'Practical tips for managing your sodium and fluid intake.',
+    points: ['Limit sodium to 2,000mg per day.', 'Limit fluid to 1.5-2 Liters.', 'Read labels carefully.'],
+    versionDate: '2024-05-20',
     content: `
 # Eating and Drinking for Your Heart
 
@@ -56,6 +65,9 @@ Your doctor might ask you to limit fluids to **1.5 to 2 Liters (6-8 cups)** tota
     id: 'palliative-care',
     title: 'Planning for the Future',
     category: 'Advanced Planning',
+    summary: 'Information on palliative care and defining your goals of care.',
+    points: ['Palliative care focuses on quality of life.', 'Discuss your goals early.', 'You can make changes at any time.'],
+    versionDate: '2024-05-20',
     content: `
 # Advanced Care and Quality of Life
 
@@ -73,21 +85,4 @@ Think about your values:
   }
 ];
 
-export const COMMON_MEDS: Medication[] = [
-  {
-    id: 'entresto',
-    name: 'Entresto (Sacubitril/Valsartan)',
-    dosage: '24/26mg',
-    frequency: 'Twice Daily',
-    category: 'ACE/ARB/ARNI',
-    purpose: 'Helps the heart pump better and reduces fluid buildup.'
-  },
-  {
-    id: 'carvedilol',
-    name: 'Carvedilol',
-    dosage: '6.25mg',
-    frequency: 'Twice Daily',
-    category: 'Beta Blocker',
-    purpose: 'Slows the heart rate and protects the heart from stress hormones.'
-  }
-];
+export const COMMON_MEDS: any[] = []; // Deprecated in favor of medicationLibrary

@@ -1,5 +1,7 @@
 import React, { useEffect, useState } from 'react';
-import { motion, AnimatePresence } from 'motion/react';
+import { motion, AnimatePresence, useReducedMotion } from 'motion/react';
+import { useLiveQuery } from 'dexie-react-hooks';
+import { db } from '../db';
 import { 
   Heart, 
   LayoutDashboard, 
@@ -41,6 +43,8 @@ const TABS = [
 export default function Layout({ children, activeTab, setActiveTab }: LayoutProps) {
   const [isMobileMenuOpen, setIsMobileMenuOpen] = React.useState(false);
   const [isOffline, setIsOffline] = useState(!navigator.onLine);
+  const settings = useLiveQuery(() => db.settings.get('global'));
+  const prefersReducedMotion = useReducedMotion();
 
   useEffect(() => {
     const handleOnline = () => setIsOffline(false);
@@ -55,10 +59,19 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
     };
   }, []);
 
+  const highContrast = settings?.highContrast;
+  const reducedMotion = settings?.reducedMotion || prefersReducedMotion;
+
   return (
-    <div className="min-h-screen bg-bg-base flex flex-col md:flex-row text-text-main font-sans selection:bg-brand-green selection:text-white">
+    <div className={cn(
+      "min-h-screen flex flex-col md:flex-row font-sans selection:bg-brand-green selection:text-white transition-colors duration-300",
+      highContrast ? "bg-white text-black" : "bg-bg-base text-text-main"
+    )}>
       {/* Sidebar - Desktop */}
-      <aside className="hidden md:flex flex-col w-72 bg-white border-r border-brand-beige p-8 sticky h-screen top-0">
+      <aside className={cn(
+        "hidden md:flex flex-col w-72 border-r p-8 sticky h-screen top-0",
+        highContrast ? "bg-white border-black" : "bg-white border-brand-beige"
+      )}>
         <div className="flex items-center gap-3 mb-12 px-2">
           <div className="w-10 h-10 bg-brand-green rounded-full flex items-center justify-center text-white shadow-sm shadow-brand-green/20">
             <span className="font-serif italic text-xl">h</span>
@@ -75,15 +88,16 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
                 key={tab.id}
                 onClick={() => setActiveTab(tab.id)}
                 className={cn(
-                  "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all duration-300 group text-sm font-medium focus:outline-none focus:ring-2 focus:ring-brand-green/20",
+                  "w-full flex items-center gap-3 px-4 py-3 rounded-2xl transition-all group text-sm font-medium focus:outline-none focus:ring-2",
                   isActive 
-                    ? "bg-brand-green text-white shadow-md shadow-brand-green/10" 
-                    : "text-text-muted hover:bg-bg-base hover:text-text-main"
+                    ? (highContrast ? "bg-black text-white" : "bg-brand-green text-white shadow-md shadow-brand-green/10") 
+                    : (highContrast ? "text-gray-600 hover:bg-gray-100" : "text-text-muted hover:bg-bg-base hover:text-text-main"),
+                  highContrast && "focus:ring-black"
                 )}
               >
                 <Icon className={cn("w-4 h-4 transition-colors", isActive ? "text-white" : "text-text-muted group-hover:text-brand-dark")} />
                 {tab.label}
-                {isActive && (
+                {isActive && !reducedMotion && (
                   <motion.div layoutId="activeDot" className="ml-auto w-1.5 h-1.5 rounded-full bg-white" />
                 )}
               </button>
@@ -92,13 +106,19 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
         </nav>
 
         <div className="mt-8 space-y-4">
-          <div className="p-6 bg-brand-green/5 rounded-[2rem] border border-brand-green/10">
-            <p className="text-[10px] font-bold text-brand-green uppercase tracking-widest mb-3">Sync Status</p>
+          <div className={cn(
+            "p-6 rounded-[2rem] border",
+            highContrast ? "border-black" : "bg-brand-green/5 border-brand-green/10"
+          )}>
+            <p className={cn(
+              "text-[10px] font-bold uppercase tracking-widest mb-3",
+              highContrast ? "text-black" : "text-brand-green"
+            )}>Sync Status</p>
             <div className="flex items-center gap-3">
                {isOffline ? (
                  <WifiOff className="w-4 h-4 text-brand-accent" />
                ) : (
-                 <CloudCheck className="w-4 h-4 text-brand-green" />
+                 <CloudCheck className={cn("w-4 h-4", highContrast ? "text-black" : "text-brand-green")} />
                )}
                <p className="text-sm font-bold text-brand-dark truncate">
                  {isOffline ? 'Offline - Local Storage' : 'Secured & Syncing'}
@@ -106,14 +126,17 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
             </div>
           </div>
           
-          <p className="text-[10px] font-bold text-text-muted text-center uppercase tracking-[0.25em]">v1.0.0-pwa</p>
+          <p className="text-[10px] font-bold text-text-muted text-center uppercase tracking-[0.25em]">v1.2.0-pwa</p>
         </div>
       </aside>
 
       {/* Mobile Nav */}
-      <div className="md:hidden flex items-center justify-between p-5 bg-white border-b border-brand-beige sticky top-0 z-50">
+      <div className={cn(
+        "md:hidden flex items-center justify-between p-5 border-b sticky top-0 z-50",
+        highContrast ? "bg-white border-black" : "bg-white border-brand-beige"
+      )}>
         <div className="flex items-center gap-2">
-          <div className="w-8 h-8 bg-brand-green rounded-full flex items-center justify-center text-white">
+          <div className={cn("w-8 h-8 rounded-full flex items-center justify-center text-white", highContrast ? "bg-black" : "bg-brand-green")}>
             <span className="font-serif italic text-lg">h</span>
           </div>
           <span className="font-serif font-medium text-lg text-brand-dark">HeartHome</span>
@@ -122,8 +145,8 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
           <AnimatePresence>
             {isOffline && (
               <motion.div 
-                initial={{ opacity: 0, scale: 0.8 }}
-                animate={{ opacity: 1, scale: 1 }}
+                initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.8 }}
+                animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1 }}
                 className="w-8 h-8 rounded-full bg-brand-accent/10 flex items-center justify-center text-brand-accent"
               >
                 <WifiOff className="w-4 h-4" />
@@ -175,9 +198,9 @@ export default function Layout({ children, activeTab, setActiveTab }: LayoutProp
         <div className="max-w-6xl mx-auto p-6 md:p-12 relative">
           <motion.div
             key={activeTab}
-            initial={{ opacity: 0, scale: 0.99, y: 10 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            transition={{ duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
+            initial={reducedMotion ? { opacity: 0 } : { opacity: 0, scale: 0.99, y: 10 }}
+            animate={reducedMotion ? { opacity: 1 } : { opacity: 1, scale: 1, y: 0 }}
+            transition={reducedMotion ? { duration: 0.1 } : { duration: 0.5, ease: [0.22, 1, 0.36, 1] }}
           >
             {children}
           </motion.div>

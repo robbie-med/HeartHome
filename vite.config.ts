@@ -12,22 +12,20 @@ export default defineConfig(({mode}) => {
       tailwindcss(),
       VitePWA({
         registerType: 'autoUpdate',
-        includeAssets: ['favicon.ico', 'apple-touch-icon.png', 'mask-icon.svg'],
+        includeAssets: ['favicon.svg'],
         manifest: {
           name: 'HeartHome',
           short_name: 'HeartHome',
-          description: 'Your patient-centered heart failure companion',
-          theme_color: '#1a1a1a',
+          description: 'Secure, offline Heart Failure companion for daily rhythm monitoring.',
+          theme_color: '#8BA888',
+          background_color: '#F9F8F4',
+          display: 'standalone',
           icons: [
             {
-              src: 'pwa-192x192.png',
-              sizes: '192x192',
-              type: 'image/png'
-            },
-            {
-              src: 'pwa-512x512.png',
-              sizes: '512x512',
-              type: 'image/png'
+              src: 'favicon.svg',
+              sizes: '192x192 512x512',
+              type: 'image/svg+xml',
+              purpose: 'any maskable'
             }
           ]
         },
@@ -36,9 +34,6 @@ export default defineConfig(({mode}) => {
         }
       })
     ],
-    define: {
-      'process.env.GEMINI_API_KEY': JSON.stringify(env.GEMINI_API_KEY),
-    },
     resolve: {
       alias: {
         '@': path.resolve(__dirname, '.'),

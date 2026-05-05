@@ -1,7 +1,6 @@
 import React from 'react';
 import Layout from './components/Layout';
 import Dashboard from './components/Dashboard';
-import DailyCheckin from './components/DailyCheckin';
 import Education from './components/Education';
 import Medications from './components/Medications';
 import AdvancedCare from './components/AdvancedCare';

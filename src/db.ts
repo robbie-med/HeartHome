@@ -17,14 +17,16 @@ export class HeartHomeDB extends Dexie {
   articles!: Table<Article>;
   contacts!: Table<Contact>;
   settings!: Table<AppSettings>;
+  auditLog!: Table<{ id?: number; action: string; timestamp: string }>;
+  exportHistory!: Table<{ id?: number; timestamp: string }>;
 
   constructor() {
     super('HeartHomeDB');
-    this.version(1).stores({
+    this.version(4).stores({
       patientProfile: 'id',
-      dailyLogs: '++id, date, source',
-      medications: 'id, name, medClass',
-      adherenceLogs: '++id, medicationId, date',
+      dailyLogs: '++id, [date+source], date, source, createdAt',
+      medications: 'id, isHFMed, isActive',
+      adherenceLogs: '++id, medicationId, date, timestamp',
       articles: 'id, category',
       contacts: 'id, name, isEmergency',
       settings: 'id',

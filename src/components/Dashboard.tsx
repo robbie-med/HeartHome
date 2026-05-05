@@ -23,7 +23,8 @@ import {
   Weight,
   Phone,
   Settings as SettingsIcon,
-  ChevronRight
+  ChevronRight,
+  Pill
 } from 'lucide-react';
 import { DayLog, SymptomLevel, PatientProfile } from '../types';
 import { format, subDays, isSameDay, parseISO } from 'date-fns';
@@ -35,6 +36,12 @@ export default function Dashboard() {
   
   const profile = useLiveQuery(() => db.patientProfile.get('me'));
   const allLogs = useLiveQuery(() => db.dailyLogs.orderBy('date').toArray()) || [];
+  const activeMeds = useLiveQuery(() => db.medications.where('isActive').equals(1).toArray()) || [];
+  const todayAdherence = useLiveQuery(() => {
+    const startOfDay = new Date();
+    startOfDay.setHours(0,0,0,0);
+    return db.adherenceLogs.where('timestamp').above(startOfDay.toISOString()).toArray();
+  }, [activeMeds]) || [];
   
   const today = format(new Date(), 'yyyy-MM-dd');
   const loggedToday = allLogs.find(l => l.date === today);
@@ -54,24 +61,58 @@ export default function Dashboard() {
   }, [allLogs]);
 
   const alertLevel = useMemo(() => {
-    if (!allLogs.length) return 'stable';
+    if (!allLogs.length || !profile) return 'stable';
     
-    // Check latest log
     const latest = [...allLogs].sort((a, b) => b.date.localeCompare(a.date))[0];
     const prev = allLogs.length > 1 ? [...allLogs].sort((a, b) => b.date.localeCompare(a.date))[1] : null;
 
-    // Weight gain logic (2lb/day or 5lb/week)
-    if (latest.weight && prev?.weight) {
-      const diff = latest.weight - prev.weight;
-      if (diff >= 2) return 'emergency';
+    // RED ALERTS (Emergency Care)
+    if (latest.chestPain || latest.syncope || latest.severeSobAtRest || latest.confusion) {
+      return 'emergency';
     }
 
-    if (latest.breathing === 'worse' || latest.swelling === SymptomLevel.SEVERE || latest.concernToday) {
-      return 'urgent';
+    // YELLOW ALERTS (Call Clinic)
+    const alerts: string[] = [];
+
+    // Weight gain
+    if (latest.weight && prev?.weight) {
+      const diff = latest.weight - prev.weight;
+      if (diff >= profile.weightAlertThreshold24h) alerts.push(`Weight gain of ${diff}${profile.units} in 24h`);
+    }
+
+    // Vitals
+    if (latest.sbp !== undefined) {
+      if (latest.sbp < profile.sbpThresholdLow) alerts.push(`Low BP: ${latest.sbp} mmHg`);
+      if (latest.sbp > profile.sbpThresholdHigh) alerts.push(`High BP: ${latest.sbp} mmHg`);
+    }
+    if (latest.heartRate !== undefined) {
+      if (latest.heartRate < profile.hrThresholdLow) alerts.push(`Low Heart Rate: ${latest.heartRate} bpm`);
+      if (latest.heartRate > profile.hrThresholdHigh) alerts.push(`High Heart Rate: ${latest.heartRate} bpm`);
+    }
+
+    // Symtpom Clusters
+    if (latest.breathing === 'worse' && latest.swelling !== SymptomLevel.NONE) {
+      alerts.push('Combined breathing and swelling changes');
+    }
+
+    if (alerts.length > 0 || latest.concernToday) {
+      return 'warning';
     }
 
     return 'stable';
-  }, [allLogs]);
+  }, [allLogs, profile]);
+
+  const alertMessage = useMemo(() => {
+    if (alertLevel === 'emergency') return 'Emergency: Seek urgent care immediately.';
+    if (alertLevel === 'warning') return 'Notice: Clinical caution recommended.';
+    return '';
+  }, [alertLevel]);
+
+  const alertInstructions = useMemo(() => {
+    if (alertLevel === 'emergency') return 'Go to the nearest emergency room or call 911 for severe symptoms.';
+    if (alertLevel === 'warning') return 'Please contact your cardiology clinic or triage nurse to discuss your symptoms and values.';
+    return '';
+  }, [alertLevel]);
 
   return (
     <div className="space-y-12 animate-in fade-in duration-500">
@@ -109,26 +150,38 @@ export default function Dashboard() {
             }`}
           >
             <div className={`w-14 h-14 rounded-2xl flex items-center justify-center shrink-0 ${
-              alertLevel === 'emergency' ? 'bg-white/20' : 'bg-amber-200'
+              alertLevel === 'emergency' ? 'bg-white/20' : 'bg-amber-100'
             }`}>
               <AlertCircle className="w-8 h-8" />
             </div>
             <div className="flex-1">
               <h4 className="font-bold text-lg leading-tight">
-                {alertLevel === 'emergency' ? 'Urgent Alert: Rapid Weight Change' : 'Clinical Caution Needed'}
+                {alertMessage}
               </h4>
-              <p className="text-sm opacity-90 font-medium">
-                {alertLevel === 'emergency' 
-                  ? 'Your data shows a significant shift. Please call your care team or triage line immediately.'
-                  : 'We noticed some worsening symptoms. It might be time to use your action plan and notify your clinic.'}
+              <p className="text-sm opacity-90 font-medium mt-1">
+                {alertInstructions}
               </p>
             </div>
-            <button className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
-              alertLevel === 'emergency' ? 'bg-white text-brand-accent' : 'bg-amber-200 text-amber-900'
-            }`}>
-               <Phone className="w-4 h-4" />
-               Call Clinic
-            </button>
+            {profile?.triageNumber ? (
+              <a 
+                href={`tel:${profile.triageNumber}`}
+                className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
+                  alertLevel === 'emergency' ? 'bg-white text-brand-accent shadow-lg' : 'bg-brand-dark text-white'
+                }`}
+              >
+                <Phone className="w-4 h-4" />
+                Contact {profile.clinicName || 'Clinic'}
+              </a>
+            ) : (
+              <button 
+                onClick={() => window.location.hash = '#settings'}
+                className={`px-6 py-3 rounded-xl font-bold flex items-center gap-2 transition-all ${
+                  alertLevel === 'emergency' ? 'bg-white text-brand-accent shadow-lg' : 'bg-brand-dark text-white'
+                }`}
+              >
+                Setup Contact Info
+              </button>
+            )}
           </motion.div>
         )}
       </AnimatePresence>
@@ -166,7 +219,7 @@ export default function Dashboard() {
           <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 relative z-10">Current Weight</p>
           <div className="flex items-baseline gap-2 relative z-10">
             <h3 className="text-5xl font-serif text-brand-dark">{loggedToday?.weight || '--'}</h3>
-            <span className="text-lg font-serif text-text-muted">lbs</span>
+            <span className="text-lg font-serif text-text-muted">{profile?.units || 'lbs'}</span>
           </div>
           <div className="mt-6 flex items-center gap-2 text-brand-green relative z-10">
              <div className="w-2 h-2 rounded-full bg-brand-green animate-pulse" />
@@ -174,17 +227,50 @@ export default function Dashboard() {
           </div>
         </div>
 
-        <div className="md:col-span-2 bg-white border border-brand-beige rounded-[3rem] p-10 shadow-sm min-h-[300px]">
+        <div className="bg-white border border-brand-beige rounded-[3rem] p-10 shadow-sm relative overflow-hidden group">
+          <Pill className="absolute -right-8 -top-8 w-32 h-32 text-brand-beige/20 -rotate-12 transition-transform group-hover:rotate-0" />
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 relative z-10">Medication Adherence</p>
+          <div className="flex items-baseline gap-2 relative z-10">
+            <h3 className="text-5xl font-serif text-brand-dark">{todayAdherence.length}</h3>
+            <span className="text-lg font-serif text-text-muted">/ {activeMeds.length} doses</span>
+          </div>
+          <div className="mt-6 space-y-2 relative z-10">
+            <div className="w-full bg-bg-base h-2 rounded-full overflow-hidden">
+               <motion.div 
+                 initial={{ width: 0 }}
+                 animate={{ width: `${(todayAdherence.length / (activeMeds.length || 1)) * 100}%` }}
+                 className="h-full bg-brand-green"
+               />
+            </div>
+            <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Today's Progress</p>
+          </div>
+        </div>
+
+        <div className="bg-white border border-brand-beige rounded-[3rem] p-10 shadow-sm relative overflow-hidden group">
+          <Wind className="absolute -right-12 -top-12 w-40 h-40 text-brand-beige/20 rotate-45" />
+          <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest mb-2 relative z-10">Daily Status</p>
+          <div className="space-y-4 relative z-10">
+             <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${loggedToday?.breathing === 'worse' ? 'bg-brand-accent' : 'bg-brand-green'}`} />
+                <span className="text-lg font-serif text-brand-dark">Breathing: {loggedToday?.breathing || '---'}</span>
+             </div>
+             <div className="flex items-center gap-2">
+                <div className={`w-3 h-3 rounded-full ${loggedToday?.swelling === SymptomLevel.SEVERE ? 'bg-brand-accent' : 'bg-brand-green'}`} />
+                <span className="text-lg font-serif text-brand-dark">Swelling: {loggedToday?.swelling || '---'}</span>
+             </div>
+          </div>
+        </div>
+      </div>
+
+      <div className="bg-white border border-brand-beige rounded-[3rem] p-10 shadow-sm min-h-[300px]">
            <div className="flex items-center justify-between mb-8">
               <h3 className="font-serif text-xl text-brand-dark">7-Day Weight Trend</h3>
-              <div className="flex gap-4">
-                 <div className="flex items-center gap-2">
-                    <div className="w-3 h-3 rounded-full bg-brand-green" />
-                    <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Weight Log</span>
-                 </div>
+              <div className="flex items-center gap-2">
+                  <div className="w-3 h-3 rounded-full bg-brand-green" />
+                  <span className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Weight Log</span>
               </div>
            </div>
-           <div className="h-[180px]">
+           <div className="h-[250px]">
               <ResponsiveContainer width="100%" height="100%">
                 <AreaChart data={last7Days}>
                   <defs>
@@ -217,7 +303,6 @@ export default function Dashboard() {
                 </AreaChart>
               </ResponsiveContainer>
            </div>
-        </div>
       </div>
 
       {/* Symptom Grids */}

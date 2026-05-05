@@ -8,25 +8,32 @@ export enum SymptomLevel {
 export type TrackingMode = 'basic' | 'standard' | 'advanced';
 
 export interface PatientProfile {
-  id: string; // usually 'me'
+  id: string; // 'me'
   name?: string;
   dob?: string;
+  clinicName?: string;
+  triageNumber?: string;
   weightBaseline?: number;
-  weightAlertThreshold24h: number; // default 2
-  weightAlertThreshold7d: number; // default 5
-  sbpThresholdLow?: number; // e.g. 90
-  hrThresholdHigh?: number; // e.g. 110
+  weightAlertThreshold24h: number; 
+  weightAlertThreshold7d: number; 
+  sbpThresholdLow: number; 
+  sbpThresholdHigh: number;
+  hrThresholdLow: number;
+  hrThresholdHigh: number;
+  units: 'lb' | 'kg';
   trackingMode: TrackingMode;
   createdAt: string;
   updatedAt: string;
 }
 
 export interface DayLog {
-  id?: number; // Dexie auto-increment
-  date: string; // ISO yyyy-mm-dd
+  id?: number;
+  date: string; // ISO yyyy-mm-dd (Unique for source)
+  timestamp: string; // Full ISO
   createdAt: string;
   updatedAt: string;
   source: 'patient' | 'caregiver' | 'clinician';
+  timezone: string;
   
   // Basic Mode
   weight?: number;
@@ -40,12 +47,15 @@ export interface DayLog {
   sbp?: number;
   dbp?: number;
   heartRate?: number;
-  dyspneaScore?: number; // 0-4
+  dyspneaScore?: number; 
   orthopneaPillows?: number;
   pnd?: boolean;
-  fatigueScore?: number; // 0-4
+  fatigueScore?: number; 
   dizziness?: boolean;
   chestPain?: boolean;
+  syncope?: boolean;
+  severeSobAtRest?: boolean;
+  confusion?: boolean;
   sodiumEstimate?: 'low' | 'moderate' | 'high' | 'unknown';
   fluidEstimateMl?: number;
 
@@ -85,8 +95,10 @@ export interface Medication {
   purpose: string;
   warnings: string;
   isHFMed: boolean;
+  isActive: boolean;
   startDate: string;
   stopDate?: string;
+  stopReason?: string;
   prescriber?: string;
   createdAt: string;
   updatedAt: string;

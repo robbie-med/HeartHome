@@ -51,83 +51,17 @@ Fluid buildup (congestion) can happen before you feel short of breath or notice 
   }
 ];
 
-export const INITIAL_MEDS: Medication[] = [
-  {
-    id: 'arni-1',
-    name: 'Entresto (Sacubitril/Valsartan)',
-    medClass: 'ARNI',
-    dosage: '49/51mg',
-    route: 'Oral',
-    frequency: 'Twice daily',
-    purpose: 'The "foundation" pill that helps your heart pump better and reduces strain.',
-    warnings: 'May cause dizziness or low blood pressure. Do not take with salt substitutes containing potassium.',
-    isHFMed: true,
-    startDate: '2026-01-01',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'beta-1',
-    name: 'Carvedilol (Coreg)',
-    medClass: 'Beta Blocker',
-    dosage: '6.25mg',
-    route: 'Oral',
-    frequency: 'Twice daily with food',
-    purpose: 'Slows heart rate and relaxes vessels to improve heart efficiency over time.',
-    warnings: 'May lower blood pressure. Do not stop suddenly.',
-    isHFMed: true,
-    startDate: '2026-01-01',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'mra-1',
-    name: 'Spironolactone (Aldactone)',
-    medClass: 'MRA',
-    dosage: '25mg',
-    route: 'Oral',
-    frequency: 'Once daily',
-    purpose: 'Reduces scarring in the heart and helps manage fluid.',
-    warnings: 'Requires regular blood tests for potassium levels.',
-    isHFMed: true,
-    startDate: '2026-01-01',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'sglt2i-1',
-    name: 'Dapagliflozin (Farxiga)',
-    medClass: 'SGLT2i',
-    dosage: '10mg',
-    route: 'Oral',
-    frequency: 'Once daily',
-    purpose: 'A newer "pillar" that helps the heart and kidneys work better together.',
-    warnings: 'Ensure good hydration. Watch for signs of urinary infections.',
-    isHFMed: true,
-    startDate: '2026-01-01',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  },
-  {
-    id: 'loop-1',
-    name: 'Furosemide (Lasix)',
-    medClass: 'Loop Diuretic',
-    dosage: '40mg',
-    route: 'Oral',
-    frequency: 'Once daily (morning)',
-    purpose: 'The "water pill" that removes extra fluid from your body.',
-    warnings: 'Will cause increased urination. Take in the morning to avoid waking up at night.',
-    isHFMed: true,
-    startDate: '2026-01-01',
-    createdAt: new Date().toISOString(),
-    updatedAt: new Date().toISOString()
-  }
-];
+export const INITIAL_MEDS: Medication[] = [];
 
 export const DEFAULT_PROFILE: PatientProfile = {
   id: 'me',
   weightAlertThreshold24h: 2,
   weightAlertThreshold7d: 5,
+  sbpThresholdLow: 90,
+  sbpThresholdHigh: 140,
+  hrThresholdLow: 50,
+  hrThresholdHigh: 100,
+  units: 'lb',
   trackingMode: 'basic',
   createdAt: new Date().toISOString(),
   updatedAt: new Date().toISOString()

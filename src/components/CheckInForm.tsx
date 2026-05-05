@@ -6,23 +6,29 @@ import { db } from '../db';
 import { SymptomLevel, TrackingMode } from '../types';
 import { Check, AlertCircle, ArrowRight, Weight, Wind, Waves, Pill } from 'lucide-react';
 import { motion, AnimatePresence } from 'motion/react';
+import { useLiveQuery } from 'dexie-react-hooks';
 
 const checkInSchema = z.object({
-  weight: z.number().optional(),
+  weight: z.number().min(50, "Weight too low").max(700, "Weight too high"),
   breathing: z.enum(['better', 'same', 'worse']),
   swelling: z.nativeEnum(SymptomLevel),
   tookMeds: z.boolean(),
   concernToday: z.boolean(),
   notes: z.string().optional(),
   // Standard
-  sbp: z.number().optional(),
-  heartRate: z.number().optional(),
+  sbp: z.number().min(60).max(260).optional(),
+  dbp: z.number().min(30).max(160).optional(),
+  heartRate: z.number().min(30).max(220).optional(),
   dyspneaScore: z.number().min(0).max(4).optional(),
-  orthopneaPillows: z.number().min(0).max(5).optional(),
+  orthopneaPillows: z.number().min(0).max(8).optional(),
   fatigueScore: z.number().min(0).max(4).optional(),
   // Advanced
   missedDiuretic: z.boolean().optional(),
   extraDiureticTaken: z.boolean().optional(),
+  chestPain: z.boolean().optional(),
+  syncope: z.boolean().optional(),
+  severeSobAtRest: z.boolean().optional(),
+  confusion: z.boolean().optional(),
 });
 
 type CheckInValues = z.infer<typeof checkInSchema>;
@@ -38,7 +44,7 @@ export default function CheckInForm({ mode, onComplete }: Props) {
     defaultValues: {
       breathing: 'same',
       swelling: SymptomLevel.NONE,
-      tookMeds: true,
+      tookMeds: false,
       concernToday: false,
       missedDiuretic: false,
       extraDiureticTaken: false
@@ -49,6 +55,8 @@ export default function CheckInForm({ mode, onComplete }: Props) {
     const today = new Date().toISOString().split('T')[0];
     await db.dailyLogs.add({
       date: today,
+      timestamp: new Date().toISOString(),
+      timezone: Intl.DateTimeFormat().resolvedOptions().timeZone,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
       source: 'patient',
@@ -64,6 +72,7 @@ export default function CheckInForm({ mode, onComplete }: Props) {
 
   const breathing = watch('breathing');
   const swelling = watch('swelling');
+  const medications = useLiveQuery(() => db.medications.toArray()) || [];
   const tookMeds = watch('tookMeds');
   const missedDiuretic = watch('missedDiuretic');
   const extraDiureticTaken = watch('extraDiureticTaken');
@@ -94,19 +103,32 @@ export default function CheckInForm({ mode, onComplete }: Props) {
 
         {/* Standard/Advanced: Vitals */}
         {(mode === 'standard' || mode === 'advanced') && (
-          <section className="grid grid-cols-2 gap-8 p-8 bg-bg-base rounded-[2.5rem] border border-brand-beige">
-             <div className="space-y-2">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Blood Pressure (Sys)</label>
-                <input 
-                  type="number" 
-                  {...register('sbp', { valueAsNumber: true })}
-                  className="w-full text-2xl font-serif bg-transparent border-b border-brand-beige focus:border-brand-green outline-none"
-                />
+          <section className="p-8 bg-bg-base rounded-[2.5rem] border border-brand-beige space-y-8">
+             <div className="grid grid-cols-2 gap-8">
+                <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Blood Pressure (Sys)</label>
+                    <input 
+                      type="number" 
+                      placeholder="SBP"
+                      {...register('sbp', { valueAsNumber: true })}
+                      className="w-full text-2xl font-serif bg-transparent border-b border-brand-beige focus:border-brand-green outline-none"
+                    />
+                </div>
+                <div className="space-y-2">
+                    <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Blood Pressure (Dia)</label>
+                    <input 
+                      type="number" 
+                      placeholder="DBP"
+                      {...register('dbp', { valueAsNumber: true })}
+                      className="w-full text-2xl font-serif bg-transparent border-b border-brand-beige focus:border-brand-green outline-none"
+                    />
+                </div>
              </div>
              <div className="space-y-2">
-                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Heart Rate</label>
+                <label className="text-[10px] font-bold text-text-muted uppercase tracking-widest">Heart Rate (BPM)</label>
                 <input 
                    type="number" 
+                   placeholder="HR"
                    {...register('heartRate', { valueAsNumber: true })}
                    className="w-full text-2xl font-serif bg-transparent border-b border-brand-beige focus:border-brand-green outline-none"
                 />
@@ -191,27 +213,83 @@ export default function CheckInForm({ mode, onComplete }: Props) {
           </section>
         )}
 
+        {/* Advanced: Red Flags */}
+        {mode === 'advanced' && (
+          <section className="space-y-6">
+            <h4 className="text-[10px] font-bold text-brand-accent uppercase tracking-widest flex items-center gap-2">
+              <AlertCircle className="w-3 h-3" />
+              Safety Check (Advanced)
+            </h4>
+            <div className="grid grid-cols-2 gap-4">
+              {[
+                { id: 'chestPain', label: 'Chest Pain' },
+                { id: 'syncope', label: 'Fainting' },
+                { id: 'severeSobAtRest', label: 'SOB at Rest' },
+                { id: 'confusion', label: 'Confusion' }
+              ].map(flag => (
+                <button
+                  key={flag.id}
+                  type="button"
+                  onClick={() => setValue(flag.id as any, !watch(flag.id as any))}
+                  className={`p-4 rounded-2xl border-2 transition-all font-bold text-[10px] uppercase tracking-widest ${
+                    watch(flag.id as any) 
+                      ? 'border-brand-accent bg-brand-accent/5 text-brand-accent' 
+                      : 'border-brand-beige bg-white text-text-muted hover:border-brand-accent/20'
+                  }`}
+                >
+                  {flag.label}
+                </button>
+              ))}
+            </div>
+          </section>
+        )}
+
         {/* Core: Meds Toggle */}
-        <section className="flex items-center justify-between p-6 bg-bg-base rounded-3xl border border-brand-beige">
-          <div className="flex items-center gap-4">
-            <div className="w-10 h-10 rounded-xl bg-brand-green flex items-center justify-center text-white">
-              <Pill className="w-5 h-5" />
+        <section className="space-y-4">
+          <div className="flex items-center justify-between p-6 bg-bg-base rounded-3xl border border-brand-beige">
+            <div className="flex items-center gap-4">
+              <div className="w-10 h-10 rounded-xl bg-brand-green flex items-center justify-center text-white">
+                <Pill className="w-5 h-5" />
+              </div>
+              <div>
+                <p className="font-bold text-brand-dark">Took your meds?</p>
+                <p className="text-[10px] text-text-muted uppercase tracking-widest">Confirm Adherence</p>
+              </div>
             </div>
-            <div>
-              <p className="font-bold text-brand-dark">Took your meds?</p>
-              <p className="text-[10px] text-text-muted uppercase tracking-widest">Morning Routine</p>
-            </div>
+            <button
+              type="button"
+              onClick={() => setValue('tookMeds', !tookMeds)}
+              className={`w-14 h-8 rounded-full transition-colors relative ${tookMeds ? 'bg-brand-green' : 'bg-brand-beige'}`}
+            >
+              <motion.div 
+                animate={{ x: tookMeds ? 24 : 4 }}
+                className="absolute top-1 left-0 w-6 h-6 bg-white rounded-full shadow-sm" 
+              />
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => setValue('tookMeds', !tookMeds)}
-            className={`w-14 h-8 rounded-full transition-colors relative ${tookMeds ? 'bg-brand-green' : 'bg-brand-beige'}`}
-          >
+
+          {tookMeds && medications.length > 0 && (
             <motion.div 
-              animate={{ x: tookMeds ? 24 : 4 }}
-              className="absolute top-1 left-0 w-6 h-6 bg-white rounded-full shadow-sm" 
-            />
-          </button>
+              initial={{ opacity: 0, y: -10 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="px-6 space-y-2"
+            >
+              <p className="text-[10px] font-bold text-text-muted uppercase tracking-widest px-1">Confirming these medications:</p>
+              <div className="flex flex-wrap gap-2">
+                {medications.map(m => (
+                  <span key={m.id} className="px-3 py-1 bg-brand-green/10 text-brand-green text-[10px] font-bold rounded-full border border-brand-green/20">
+                    {m.name}
+                  </span>
+                ))}
+              </div>
+            </motion.div>
+          )}
+
+          {!tookMeds && (
+            <p className="text-[10px] text-brand-accent font-bold uppercase tracking-widest text-center animate-pulse">
+              Please confirm medications if taken
+            </p>
+          )}
         </section>
 
         <button 
