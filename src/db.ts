@@ -27,7 +27,9 @@ export class HeartHomeDB extends Dexie {
       adherenceLogs: '++id, medicationId, date',
       articles: 'id, category',
       contacts: 'id, name, isEmergency',
-      settings: 'id'
+      settings: 'id',
+      auditLog: '++id, timestamp',
+      exportHistory: '++id, timestamp'
     });
   }
 }

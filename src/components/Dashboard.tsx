@@ -133,6 +133,32 @@ export default function Dashboard() {
         )}
       </AnimatePresence>
 
+      {/* Emergency / Red Flag Card */}
+      <section className="bg-brand-accent/5 border-2 border-brand-accent/20 rounded-[3rem] p-10 space-y-6">
+          <div className="flex items-center gap-4 text-brand-accent">
+            <div className="w-12 h-12 bg-brand-accent text-white rounded-2xl flex items-center justify-center shadow-lg shadow-brand-accent/20">
+                <AlertCircle className="w-6 h-6" />
+            </div>
+            <div>
+                <h3 className="text-2xl font-serif">Red Flag Warning</h3>
+                <p className="text-[10px] font-bold uppercase tracking-widest mt-1">If you feel these symptoms, go to the ER or call 911</p>
+            </div>
+          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            {[
+              'Chest pain or heavy pressure',
+              'Fainting or passing out',
+              'Severe shortness of breath at rest',
+              'Heart racing that won\'t stop'
+            ].map(s => (
+              <div key={s} className="flex items-center gap-3 p-4 bg-white/50 rounded-2xl border border-brand-accent/10">
+                  <div className="w-1.5 h-1.5 rounded-full bg-brand-accent" />
+                  <span className="text-sm font-bold text-brand-accent">{s}</span>
+              </div>
+            ))}
+          </div>
+      </section>
+
       {/* Stats Grid */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
         <div className="bg-white border border-brand-beige rounded-[3rem] p-10 shadow-sm relative overflow-hidden group">
@@ -266,6 +292,47 @@ export default function Dashboard() {
           </div>
         </div>
       </div>
+
+      {/* FACETS Summary (Advanced) */}
+      {profile?.trackingMode === 'advanced' && (
+        <section className="bg-brand-dark text-white rounded-[3rem] p-12 space-y-8 shadow-2xl relative overflow-hidden">
+          <div className="relative z-10">
+            <div className="flex items-center justify-between mb-8">
+              <div className="space-y-1">
+                <h4 className="text-[10px] font-bold uppercase tracking-widest text-brand-green">Clinical Snapshot</h4>
+                <h3 className="text-3xl font-serif">Your FACETS Rhythm</h3>
+              </div>
+              <div className="px-4 py-2 bg-white/10 rounded-full text-xs font-bold text-brand-green border border-white/5">
+                Last updated: {loggedToday?.date || 'Today'}
+              </div>
+            </div>
+            
+            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+               {[
+                 { l: 'F', t: 'Fatigue', d: 'Energy levels over last 24h', s: 'Stable' },
+                 { l: 'A', t: 'Activity', d: 'Tolerance for walking/stairs', s: 'Baseline' },
+                 { l: 'C', t: 'Congestion', d: 'Cough or breathlessness', s: loggedToday?.breathing === 'worse' ? 'Worsening' : 'None' },
+                 { l: 'E', t: 'Edema', d: 'Visible swelling in ankles/feet', s: loggedToday?.swelling === SymptomLevel.NONE ? 'None' : 'Present' },
+                 { l: 'T', t: 'Threshold', d: 'Weight change from baseline', s: 'Within Goal' },
+                 { l: 'S', t: 'Safety', s: 'Low Priority' }
+               ].map(f => (
+                 <div key={f.l} className="p-6 bg-white/5 rounded-2xl border border-white/10 hover:bg-white/10 transition-colors">
+                    <div className="flex items-center gap-3 mb-3">
+                       <span className="w-8 h-8 rounded-lg bg-brand-green flex items-center justify-center text-[10px] font-bold text-brand-dark">{f.l}</span>
+                       <h5 className="font-serif text-lg">{f.t}</h5>
+                    </div>
+                    <p className="text-[10px] opacity-40 uppercase tracking-widest font-bold mb-3">{f.d}</p>
+                    <div className="flex items-center gap-2">
+                       <div className={`w-1.5 h-1.5 rounded-full ${f.s === 'Worsening' ? 'bg-brand-accent' : 'bg-brand-green'}`} />
+                       <span className="text-sm font-bold">{f.s}</span>
+                    </div>
+                 </div>
+               ))}
+            </div>
+          </div>
+          <div className="absolute -right-20 -bottom-20 w-80 h-80 bg-brand-green/10 rounded-full blur-[100px] pointer-events-none" />
+        </section>
+      )}
 
       {/* Check-in Modal */}
       <AnimatePresence>

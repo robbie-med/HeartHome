@@ -33,15 +33,30 @@ Fluid buildup (congestion) can happen before you feel short of breath or notice 
 3. Wearing the same amount of clothing.
 4. Record it immediately in HeartHome.`,
     versionDate: '2024-05-01'
+  },
+  {
+    id: 'facets-info',
+    title: 'Understanding FACETS',
+    category: 'Management',
+    summary: 'The clinical model for heart failure rhythm.',
+    points: ['F stands for Fatigue.', 'A stands for Activity tolerance.', 'C stands for Congestion/Cough.'],
+    content: `FACETS is a memory tool to help you monitor your health:
+* **F**atigue: Are you more tired than usual?
+* **A**ctivity: Can you walk as far as you did yesterday?
+* **C**ongestion: Do you have a new dry cough?
+* **E**dema: Are your ankles or feet swelling?
+* **T**hreshold: Have you crossed your weight alert line?
+* **S**afety: Any dizziness or chest pain?`,
+    versionDate: '2024-05-01'
   }
 ];
 
 export const INITIAL_MEDS: Medication[] = [
   {
     id: 'arni-1',
-    name: 'Entresto',
+    name: 'Entresto (Sacubitril/Valsartan)',
     medClass: 'ARNI',
-    dosage: '24/26mg',
+    dosage: '49/51mg',
     route: 'Oral',
     frequency: 'Twice daily',
     purpose: 'The "foundation" pill that helps your heart pump better and reduces strain.',
@@ -52,8 +67,50 @@ export const INITIAL_MEDS: Medication[] = [
     updatedAt: new Date().toISOString()
   },
   {
+    id: 'beta-1',
+    name: 'Carvedilol (Coreg)',
+    medClass: 'Beta Blocker',
+    dosage: '6.25mg',
+    route: 'Oral',
+    frequency: 'Twice daily with food',
+    purpose: 'Slows heart rate and relaxes vessels to improve heart efficiency over time.',
+    warnings: 'May lower blood pressure. Do not stop suddenly.',
+    isHFMed: true,
+    startDate: '2026-01-01',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'mra-1',
+    name: 'Spironolactone (Aldactone)',
+    medClass: 'MRA',
+    dosage: '25mg',
+    route: 'Oral',
+    frequency: 'Once daily',
+    purpose: 'Reduces scarring in the heart and helps manage fluid.',
+    warnings: 'Requires regular blood tests for potassium levels.',
+    isHFMed: true,
+    startDate: '2026-01-01',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
+    id: 'sglt2i-1',
+    name: 'Dapagliflozin (Farxiga)',
+    medClass: 'SGLT2i',
+    dosage: '10mg',
+    route: 'Oral',
+    frequency: 'Once daily',
+    purpose: 'A newer "pillar" that helps the heart and kidneys work better together.',
+    warnings: 'Ensure good hydration. Watch for signs of urinary infections.',
+    isHFMed: true,
+    startDate: '2026-01-01',
+    createdAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString()
+  },
+  {
     id: 'loop-1',
-    name: 'Lasix (Furosemide)',
+    name: 'Furosemide (Lasix)',
     medClass: 'Loop Diuretic',
     dosage: '40mg',
     route: 'Oral',

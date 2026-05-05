@@ -54,6 +54,11 @@ export default function CheckInForm({ mode, onComplete }: Props) {
       source: 'patient',
       ...data
     });
+    // Log Activity
+    await db.auditLog.add({
+      action: 'Daily check-in submitted',
+      timestamp: new Date().toISOString()
+    });
     onComplete();
   };
 

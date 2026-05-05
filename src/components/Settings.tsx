@@ -7,9 +7,62 @@ import { TrackingMode } from '../types';
 export default function Settings() {
   const profile = useLiveQuery(() => db.patientProfile.get('me'));
   const settings = useLiveQuery(() => db.settings.get('global'));
+  const auditLogs = useLiveQuery(() => db.auditLog.toArray()) || [];
 
   const setTrackingMode = async (mode: TrackingMode) => {
     await db.patientProfile.update('me', { trackingMode: mode, updatedAt: new Date().toISOString() });
+  };
+
+  const exportAsJSON = async () => {
+    const logs = await db.dailyLogs.toArray();
+    const meds = await db.medications.toArray();
+    const profileData = await db.patientProfile.get('me');
+    
+    const exportData = {
+      profile: profileData,
+      logs,
+      medications: meds,
+      exportedAt: new Date().toISOString(),
+      version: '1.0.0'
+    };
+
+    const blob = new Blob([JSON.stringify(exportData, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HeartHome_Backup_${new Date().toISOString().split('T')[0]}.json`;
+    a.click();
+    URL.revokeObjectURL(url);
+    await db.exportHistory.add({ timestamp: new Date().toISOString() });
+  };
+
+  const exportAsCSV = async () => {
+    const logs = await db.dailyLogs.toArray();
+    if (!logs.length) return;
+
+    const headers = ['Date', 'Weight', 'Breathing', 'Swelling', 'Took Meds', 'Notes'];
+    const rows = logs.map(l => [
+      l.date,
+      l.weight || '',
+      l.breathing,
+      l.swelling,
+      l.tookMeds ? 'Yes' : 'No',
+      (l.notes || '').replace(/,/g, ';')
+    ]);
+
+    const csvContent = [
+      headers.join(','),
+      ...rows.map(r => r.join(','))
+    ].join('\n');
+
+    const blob = new Blob([csvContent], { type: 'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = `HeartHome_Logs_${new Date().toISOString().split('T')[0]}.csv`;
+    a.click();
+    URL.revokeObjectURL(url);
+    await db.exportHistory.add({ timestamp: new Date().toISOString() });
   };
 
   return (
@@ -74,6 +127,41 @@ export default function Settings() {
                 ))}
              </div>
           </section>
+
+          {/* Audit Log */}
+          <section className="space-y-6">
+             <h3 className="text-[10px] font-bold text-text-muted uppercase tracking-[0.25em] flex items-center gap-2">
+                <Shield className="w-4 h-4" />
+                Security Audit Trail
+             </h3>
+             <div className="bg-white border border-brand-beige rounded-2xl overflow-hidden">
+                <div className="p-4 bg-bg-base border-b border-brand-beige flex justify-between">
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Activity</span>
+                   <span className="text-[10px] font-bold uppercase tracking-widest text-text-muted">Timestamp</span>
+                </div>
+                <div className="max-h-40 overflow-y-auto custom-scrollbar">
+                   {auditLogs?.length ? auditLogs.slice().reverse().map(log => (
+                     <div key={log.id} className="p-4 border-b border-brand-beige last:border-0 flex justify-between items-center text-xs">
+                        <span className="font-bold text-brand-dark">{log.action}</span>
+                        <span className="text-text-muted">{new Date(log.timestamp).toLocaleString()}</span>
+                     </div>
+                   )) : (
+                     <div className="p-4 text-center text-xs text-text-muted">No activity logged.</div>
+                   )}
+                </div>
+             </div>
+          </section>
+
+          {/* Privacy Statement */}
+          <section className="p-8 bg-brand-green/5 rounded-[2.5rem] border border-brand-green/10 space-y-4">
+             <div className="flex items-center gap-3 text-brand-green">
+                <Shield className="w-5 h-5" />
+                <h4 className="font-serif text-xl">Privacy Commitment</h4>
+             </div>
+             <p className="text-sm text-brand-dark/70 leading-relaxed font-medium">
+               HeartHome is an **offline-first** application. Your medical data never leaves this device unless you explicitly use the export tools below. We do not use third-party analytics or cloud trackers. Your rhythm is your concern, and your data is your property.
+             </p>
+          </section>
         </div>
 
         {/* Action Sidebar */}
@@ -87,11 +175,17 @@ export default function Settings() {
                  </p>
               </div>
               <div className="space-y-3">
-                <button className="w-full py-4 px-6 bg-white/10 rounded-2xl text-sm font-bold hover:bg-white/20 transition-all flex items-center justify-between group">
-                   Export as PDF <ChevronRight className="w-4 h-4" />
-                </button>
-                <button className="w-full py-4 px-6 bg-white/10 rounded-2xl text-sm font-bold hover:bg-white/20 transition-all flex items-center justify-between group">
+                <button 
+                  onClick={exportAsCSV}
+                  className="w-full py-4 px-6 bg-white/10 rounded-2xl text-sm font-bold hover:bg-white/20 transition-all flex items-center justify-between group"
+                >
                    Export as CSV <ChevronRight className="w-4 h-4" />
+                </button>
+                <button 
+                  onClick={exportAsJSON}
+                  className="w-full py-4 px-6 bg-white/10 rounded-2xl text-sm font-bold hover:bg-white/20 transition-all flex items-center justify-between group"
+                >
+                   Export Backup (JSON) <ChevronRight className="w-4 h-4" />
                 </button>
               </div>
            </div>
